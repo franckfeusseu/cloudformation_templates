@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: 
+  "2010-09-09"
+Description: 
+  "Amazon S3 with custom Bucket name"
+Parameters:
+  YourBucketName:
+    Description: 
+      "Amazon S3 Bucket name"
+    Type: 
+      "String"
+Resources:
+  SimpleBucket:
+    Type:
+      "AWS::S3::Bucket"
+    Properties:
+      BucketName: 
+        Ref: YourBucketName
