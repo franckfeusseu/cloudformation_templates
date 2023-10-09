@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: EC2 Instance with user data
+
+Parameters:
+  SSHKey:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing Ec2 keypair to enable SSH access to the instance
+  TypeInstance:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - m1.large
+    Description: Type of the Ec2 Instance to be Used
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      "HVM64": "ami-009d6802948d06e52"
+    us-east-2:
+      "HVM64": "ami-01103fb68b3569475"
+    us-west-1:
+      "HVM64": "ami-073e64e4c237c08ad"
+    us-west-2:
+      "HVM64": "ami-0ccea833bf267252a"
+    eu-central-1:
+      "HVM64": "ami-0b9094fa2b07038b8"
+    eu-west-1:
+      "HVM64": "ami-0648880541a3156f7"
+    eu-west-2:
+      "HVM64": "ami-07dc0b5cad2999c28"
+    eu-west-3:
+      "HVM64": "ami-091b37bfd6e01db4f"
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+      InstanceType: !Ref TypeInstance
+      KeyName: !Ref SSHKey
+      SecurityGroups:
+        - !Ref SSHSecurityGroup
+
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash -xe
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "Hello word from user data" > /var/www/html/index.html
+
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSh and httpd
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80

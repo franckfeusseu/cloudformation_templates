@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Creates an ECR repository.
+Parameters:
+  RepoName: 
+    Type: String
+    Default: test-repo
+    Description: The name of the ECR repository.
+
+Resources:
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepoName
