@@ -1,0 +1,105 @@
+# Copyright 2023 franck fesse
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Core network template consisting of VPC, IGW, RoutrTables and Subnets
+
+Parameters:
+  VpcCidr:
+    Type: String
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Description: Enter Your Vpc Cidr Block
+  PublicSubnet1Cidr:
+    Type: String
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Description: Enter your public subnet Cidr Block
+  PrivateSubnet1Cidr:
+    Type: String
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Description: Enter Your private subnet Cidr Block  
+
+Resources:
+  #Let's take care of the VPC first
+  MyVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+  #Create Internet Gateway
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+  #Let attach the Internet gateway to the vpc  
+  VpcInternetGatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref MyInternetGateway
+      VpcId: !Ref MyVpc  
+  #Let's create the route tables..
+  #Public route table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVpc
+  #Private route table
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVpc   
+  #Let build our route
+  #private route 
+  #and then public route
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyInternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: !Ref PublicSubnet1Cidr
+      VpcId: !Ref MyVpc # Required
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone:
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      VpcId: !Ref MyVpc
+
+  PublicSubnetRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable # Required
+      SubnetId: !Ref PublicSubnet1 # Required
+
+  PrivateSubnetRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable # Required
+      SubnetId: !Ref PrivateSubnet1 # Required   
+  
+        
+      
+    
