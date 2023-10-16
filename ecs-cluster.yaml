@@ -11,17 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-AWSTemplateFormatVersion: 2010-09-09
-Description: > cloudformation template for the infrastructure of pweb application that consist:
-    - RDS Database.
-    - Elasticache cluster 
-    - S3 bucket 
-    - Cloudfront distribution
-    - Autoscaling Group 
-    - Elastic Loadbalancer 
-  
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Creates an ECS Cluster .
 Parameters:
-  
+  ClusterName: 
+    Type: String
+    Default: test-cluster
+    Description: The name of the ECS Cluster.
+
 Resources:
-  
-Outputs:
+  Type: AWS::ECS::Cluster
+  Properties: 
+    CapacityProviders: 
+      - String
+    ClusterName: !Ref ClusterName
+    ClusterSettings: 
+      - ClusterSettings
+    Configuration: 
+      ClusterConfiguration
+    DefaultCapacityProviderStrategy: 
+      - CapacityProviderStrategyItem
+    ServiceConnectDefaults: 
+      ServiceConnectDefaults
+    Tags: 
+      - Tag
