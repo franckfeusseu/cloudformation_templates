@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create a parameter store  
+  
+Parameters:
+  Mysecret:
+    Description: Username for the database access
+    Type: String
+    MinLength: 6
+    MaxLength: 24
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*' 
+  
+Resources:
+  Myparameter:
+    Type: AWS::SSM::Parameter
+    DeletionPolicy: Retain
+    Properties:
+      Description: This is my parameter store
+      Name: test-param
+      Tier: Standard
+      Type: String
+      Value: !Ref Mysecret
+  MyScret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: This is my secret from secret manager
+      Name: test-param
+      SecretString: !Ref Mysecret 
+  

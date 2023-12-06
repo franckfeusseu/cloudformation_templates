@@ -1,0 +1,131 @@
+---
+# Copyright 2023 franck fesse
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: 2010-09-09
+Description: RdS postgresql database 
+  
+Parameters:
+  DBName:
+    Default: mydb
+    Description: This is my database
+    Type: String
+    MinLength: "4"
+    MaxLength: "64"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+  DBInstanceClass:
+    Default: db.t3.small
+    Type: String
+    AllowedValues:
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+      - db.t3.large
+      - db.t4g.micro
+      - db.t4g.small
+      - db.t4g.medium
+      - db.t4g.large
+      - db.m5.large
+      - db.r5.large
+      - db.r5b.large
+    ConstraintDescription: Must be a valid DB instance type.
+  DBAllocatedStorage:
+    Default: 50
+    Description: The size of the database in GB
+    Type: Number
+    MinValue: 20
+    MaxValue: 65536
+    ConstraintDescription: Must be between 20 and 65536 GB
+  DBEngine:
+    Default: postgres
+    Type: String
+    AllowedValues:
+      - postgres
+      - mysql
+      - mariadb
+  DBUsername:
+    Description: Username for the database access
+    Type: String
+    MinLength: 6
+    MaxLength: 24
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'     
+  DBPassword:
+    NoEcho: true 
+    Description: Password for the database access
+    Type: String
+    MinLength: 8
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9]*' 
+  DBIsPublic:
+    Default: false
+    Description: Is it a Public Database?
+    Type: String
+    AllowedValues:
+      - true 
+      - false 
+
+    
+Resources:
+  DBNameParameterStore:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Db username store in parameter store
+      Name: DBName
+      Tier: Standard
+      Type: String
+      Value: !Ref DBName
+  DBUsernameParameterStore:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Db username store in parameter store
+      Name: DBUsername
+      Tier: Standard
+      Type: String
+      Value: !Ref DBUsername
+  DBPasswordParameterStore:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Db username store in parameter store
+      Name: DBPassword
+      Tier: Standard
+      Type: String
+      Value: !Ref DBPassword
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      DBName: !Ref DBName
+      Engine: !Ref DBEngine
+      MasterUserPassword: !Ref DBPassword
+      MasterUsername: !Ref DBUsername
+      PubliclyAccessible: !Ref DBIsPublic
+      VPCSecurityGroups: 
+        - !GetAtt DBSecurityGroup.GroupId
+    DeletionPolicy: Snapshot  
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Database security group" # Required
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+
+  
+Outputs:
+  DatabaseEndpoint:
+    Description: "Connection endpoint for the database"
+    Value: !GetAtt DBInstance.Endpoint.Address
