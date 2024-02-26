@@ -21,7 +21,61 @@ Description: > cloudformation template for the infrastructure of pweb applicatio
     - Elastic Loadbalancer 
   
 Parameters:
-  
+  ClusterName:
+    Type: String
+    Description: Enter your cluster name
+  ApplicationDesiredCount:
+    Type: Number
+    Description: Desired EC2 instance count
+  ApplicationSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Target subnets for Ec2 instances
+  PwebImageId:
+    Type: String
+    Description: ECS-Pweb Amazon Image (AMI) ID 
+  PwebInstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t3.micro
+      - t3.small
+      - t3.meduim
+      - t3.large   
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
 Resources:
+  PwebCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ClusterName
+  PwebAutoscalingLauchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties: 
+      LauchTemplateName: !Sub ${AWS::StackName}-lauch-template
+      LauchTemplateData:
+        ImageId: !Ref PwebImageId
+        InstanceType: !Ref PwebInstanceType 
+        KeyName: !Ref KeyName   
+        SecurityGroups:
+        # create security groups for launch instances. 
+        IamInstanceProfile:
+        # create iam profile for the instance  
+  PwebAutoscaling:
+    Type: AWS::AutoScaling::AutoscalingGroup
+    Properties:
+      LauchTemplate:
+        LauchTemplateId: !Ref PwebAutoscalingLauchTemplate
+        Version: !GetAtt PwebAutoscalingLauchTemplate.LatestVersionNumber
+      DesiredCapacity: !Ref ApplicationDesiredCount
+      LaunchConfigurationName: !Ref PwebAutoscalingLauchConfiguration
+      MaxSize: 4
+      MinSize: 1
+      VPCZoneIdentifier: !Ref ApplicationSubnets
+
+  
   
 Outputs:
