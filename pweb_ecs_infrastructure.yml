@@ -1,25 +1,6 @@
-# Copyright 2023 franck fesse
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 AWSTemplateFormatVersion: 2010-09-09
-Description: > cloudformation template for the infrastructure of pweb application that consist:
-    - RDS Database.
-    - Elasticache cluster 
-    - S3 bucket 
-    - Cloudfront distribution
-    - Autoscaling Group 
-    - Elastic Loadbalancer 
-  
+Description: |
+  cloudformation template for the infrastructure of pweb application that consist: - RDS Database. - Elasticache cluster  - S3 bucket  - Cloudfront distribution - Autoscaling Group  - Elastic Loadbalancer
 Parameters:
   ClusterName:
     Type: String
@@ -30,9 +11,10 @@ Parameters:
   ApplicationSubnets:
     Type: List<AWS::EC2::Subnet::Id>
     Description: Target subnets for Ec2 instances
-  PwebImageId:
-    Type: String
-    Description: ECS-Pweb Amazon Image (AMI) ID 
+  PwebAmiId:
+    Description: Region specific image from the Parameter Store
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   PwebInstanceType:
     Type: String
     Default: t2.micro
@@ -44,9 +26,10 @@ Parameters:
       - t3.micro
       - t3.small
       - t3.meduim
-      - t3.large   
+      - t3.large
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
+    Description: ECS instances's key pair 
 Resources:
   PwebCluster:
     Type: AWS::ECS::Cluster
@@ -54,16 +37,14 @@ Resources:
       ClusterName: !Ref ClusterName
   PwebAutoscalingLauchTemplate:
     Type: AWS::EC2::LaunchTemplate
-    Properties: 
+    Properties:
       LauchTemplateName: !Sub ${AWS::StackName}-lauch-template
       LauchTemplateData:
-        ImageId: !Ref PwebImageId
-        InstanceType: !Ref PwebInstanceType 
-        KeyName: !Ref KeyName   
-        SecurityGroups:
-        # create security groups for launch instances. 
-        IamInstanceProfile:
-        # create iam profile for the instance  
+        ImageId: !Ref PwebAmiId
+        InstanceType: !Ref PwebInstanceType
+        KeyName: !Ref KeyName
+        SecurityGroups: null
+        IamInstanceProfile: null
   PwebAutoscaling:
     Type: AWS::AutoScaling::AutoscalingGroup
     Properties:
@@ -75,7 +56,30 @@ Resources:
       MaxSize: 4
       MinSize: 1
       VPCZoneIdentifier: !Ref ApplicationSubnets
+ # Pweb elastic load balancer     
+  PwebALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes: 
+        - Key: idle_timeout.timeout_seconds
+          Value : 30
+      Name: !Sub ${AWS::StackName}-elastic-loadbalancer
+      Scheme: internet-facing
+      SecurityGroups: !Ref PwebALBSecurityGroup
+      Subnets: !Ref ApplicationSubnets
+  # Pweb elastic load balancer security group
+  PwebALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: String
+      GroupName: String
+      SecurityGroupEgress: 
+        - Egress
+      SecurityGroupIngress: 
+        - Ingress
+      Tags: 
+        - Tag
+      VpcId: String
+    
 
-  
-  
-Outputs:
+Outputs: null
