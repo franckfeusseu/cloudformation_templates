@@ -1,24 +1,9 @@
-# Copyright 2023 franck fesse
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-AWSTemplateFormatVersion: "2010-09-09"
-
+AWSTemplateFormatVersion: '2010-09-09'
 Description: Core network template consisting of VPC, IGW, RoutrTables and Subnets
-
 Parameters:
   VpcCidr:
     Type: String
-    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
     Description: Enter Your Vpc Cidr Block
   NbPublicSubnet:
     Type: Number
@@ -31,24 +16,29 @@ Parameters:
     Default: 1
     Description: Enter The number of Private Subnet
     MinValue: 1
-    MaxValue: 3    
+    MaxValue: 3
   PublicSubnet1Cidr:
     Type: String
-    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
     Description: Enter your public subnet Cidr Block
   PrivateSubnet1Cidr:
     Type: String
-    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
-    Description: Enter Your private subnet Cidr Block  
+    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
+    Description: Enter Your private subnet Cidr Block
 Conditions:
-  Has2PublicSubnets: !Equals [!Ref NbPublicSubnet, 2]
-  Has3PublicSubnets: !Equals [!Ref NbPublicSubnet, 3]
-  Has2PrivatecSubnets: !Equals [!Ref NbPrivateSubnet, 2]
-  Has3PrivatecSubnets: !Equals [!Ref NbPrivateSubnet, 3]
-
-
+  Has2PublicSubnets: !Equals
+    - !Ref NbPublicSubnet
+    - 2
+  Has3PublicSubnets: !Equals
+    - !Ref NbPublicSubnet
+    - 3
+  Has2PrivatecSubnets: !Equals
+    - !Ref NbPrivateSubnet
+    - 2
+  Has3PrivatecSubnets: !Equals
+    - !Ref NbPrivateSubnet
+    - 3
 Resources:
-  #Let's take care of the VPC first
   MyVpc:
     Type: AWS::EC2::VPC
     Properties:
@@ -56,102 +46,81 @@ Resources:
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
-  #Create Internet Gateway
   MyInternetGateway:
     Type: AWS::EC2::InternetGateway
-  #Let attach the Internet gateway to the vpc  
   VpcInternetGatewayAttachement:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref MyInternetGateway
-      VpcId: !Ref MyVpc  
-  #Let's create the route tables..
-  #Public route table
+      VpcId: !Ref MyVpc
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref MyVpc
-  #Private route table
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MyVpc   
-  #Let build our route
-  #private route 
-  #and then public route
+      VpcId: !Ref MyVpc
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref MyInternetGateway
       RouteTableId: !Ref PublicRouteTable
-
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone:
-        Fn::Select: 
-          - 0
-          - Fn::GetAZs: ""
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
       CidrBlock: !Ref PublicSubnet1Cidr
-      VpcId: !Ref MyVpc # Required
-  
+      VpcId: !Ref MyVpc
   PublicSubnet2:
     LogicalID:
       Type: AWS::EC2::Subnet
       Condition: Has2PublicSubnets
       Properties:
         AssignIpv6AddressOnCreation: false
-        AvailabilityZone: "String"
-        AvailabilityZoneId: "String"
-        CidrBlock: "String"
+        AvailabilityZone: String
+        AvailabilityZoneId: String
+        CidrBlock: String
         EnableDns64: false
-        Ipv6CidrBlock: "String"
+        Ipv6CidrBlock: String
         Ipv6Native: false
         MapPublicIpOnLaunch: false
-        OutpostArn: "String"
+        OutpostArn: String
         PrivateDnsNameOptionsOnLaunch:
           EnableResourceNameDnsAAAARecord: false
           EnableResourceNameDnsARecord: false
-          HostnameType: "String"
-        Tags: 
-          Tags
-        VpcId: !Ref MyVpc # Required
-
+          HostnameType: String
+        Tags: Tags
+        VpcId: !Ref MyVpc
   PublicSubnet3:
     LogicalID:
       Type: AWS::EC2::Subnet
       Conditions: Has3PublicSubnets
       Properties:
-        AvailabilityZone:
-        Fn::Select: 
+        AvailabilityZone: null
+        Fn::Select:
           - 0
-          - Fn::GetAZs: ""
+          - !GetAZs ''
         CidrBlock: !Ref PublicSubnet1Cidr
-        VpcId: MyVpc # Required   
-
+        VpcId: MyVpc
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone:
-        Fn::Select: 
-          - 1
-          - Fn::GetAZs: ""
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
       CidrBlock: !Ref PrivateSubnet1Cidr
       VpcId: !Ref MyVpc
-
   PublicSubnetRouteAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref PublicRouteTable # Required
-      SubnetId: !Ref PublicSubnet1 # Required
-
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
   PrivateSubnetRouteAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref PrivateRouteTable # Required
-      SubnetId: !Ref PrivateSubnet1 # Required   
-  
-        
-      
-    
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
