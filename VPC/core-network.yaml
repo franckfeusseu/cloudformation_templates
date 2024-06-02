@@ -1,53 +1,32 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Core network template consisting of VPC, IGW, RoutrTables and Subnets
+Description: Core network template consisting of VPC, IGW, RouteTables and Subnets
 Parameters:
-  VpcCidr:
+  VpcName:
     Type: String
-    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
-    Description: Enter Your Vpc Cidr Block
-  NbPublicSubnet:
+    Description: Name your VPC
+  VpcNetworkId:
     Type: Number
-    Default: 1
-    Description: Enter The number of Public Subnet
-    MinValue: 1
-    MaxValue: 3
-  NbPrivateSubnet:
-    Type: Number
-    Default: 1
-    Description: Enter The number of Private Subnet
-    MinValue: 1
-    MaxValue: 3
-  PublicSubnet1Cidr:
-    Type: String
-    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
-    Description: Enter your public subnet Cidr Block
-  PrivateSubnet1Cidr:
-    Type: String
-    AllowedPattern: ((\d{1,3})\.){3}\d{1,3}/\d{1,2}
-    Description: Enter Your private subnet Cidr Block
-Conditions:
-  Has2PublicSubnets: !Equals
-    - !Ref NbPublicSubnet
-    - 2
-  Has3PublicSubnets: !Equals
-    - !Ref NbPublicSubnet
-    - 3
-  Has2PrivatecSubnets: !Equals
-    - !Ref NbPrivateSubnet
-    - 2
-  Has3PrivatecSubnets: !Equals
-    - !Ref NbPrivateSubnet
-    - 3
+    Default: 0
+    Description: Enter Your Vpc Network Id
+    MinValue: 0
+    MaxValue: 255
 Resources:
   MyVpc:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VpcCidr
+      CidrBlock: !Sub 10.${VpcNetworkId}.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Ref VpcName
   MyInternetGateway:
     Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-InternetGateway
   VpcInternetGatewayAttachement:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -73,54 +52,93 @@ Resources:
       AvailabilityZone: !Select
         - 0
         - !GetAZs ''
-      CidrBlock: !Ref PublicSubnet1Cidr
+      CidrBlock: !Sub 10.${VpcNetworkId}.0.0/20
       VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-public-subnet1
   PublicSubnet2:
-    LogicalID:
-      Type: AWS::EC2::Subnet
-      Condition: Has2PublicSubnets
-      Properties:
-        AssignIpv6AddressOnCreation: false
-        AvailabilityZone: String
-        AvailabilityZoneId: String
-        CidrBlock: String
-        EnableDns64: false
-        Ipv6CidrBlock: String
-        Ipv6Native: false
-        MapPublicIpOnLaunch: false
-        OutpostArn: String
-        PrivateDnsNameOptionsOnLaunch:
-          EnableResourceNameDnsAAAARecord: false
-          EnableResourceNameDnsARecord: false
-          HostnameType: String
-        Tags: Tags
-        VpcId: !Ref MyVpc
-  PublicSubnet3:
-    LogicalID:
-      Type: AWS::EC2::Subnet
-      Conditions: Has3PublicSubnets
-      Properties:
-        AvailabilityZone: null
-        Fn::Select:
-          - 0
-          - !GetAZs ''
-        CidrBlock: !Ref PublicSubnet1Cidr
-        VpcId: MyVpc
-  PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
         - 1
         - !GetAZs ''
-      CidrBlock: !Ref PrivateSubnet1Cidr
+      CidrBlock: !Sub 10.${VpcNetworkId}.16.0/20
       VpcId: !Ref MyVpc
-  PublicSubnetRouteAssociation:
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-public-subnet2
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 2
+        - !GetAZs ''
+      CidrBlock: !Sub 10.${VpcNetworkId}.32.0/20
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-public-subnet3
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Sub 10.${VpcNetworkId}.48.0/20
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-private-subnet1
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Sub 10.${VpcNetworkId}.64.0/20
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-private-subnet2
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 2
+        - !GetAZs ''
+      CidrBlock: !Sub 10.${VpcNetworkId}.80.0/20
+      VpcId: !Ref MyVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${VpcName}-private-subnet3
+  PublicSubnetRouteAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet1
-  PrivateSubnetRouteAssociation:
+  PublicSubnetRouteAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+  PublicSubnetRouteAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet3
+  PrivateSubnetRouteAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       SubnetId: !Ref PrivateSubnet1
+  PrivateSubnetRouteAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet2
+  PrivateSubnetRouteAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet3

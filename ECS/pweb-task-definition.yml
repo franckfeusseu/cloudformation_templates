@@ -1,0 +1,160 @@
+---
+# Copyright 2023 franck fesse
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: 2010-09-09
+Description: Pweb task definition
+
+Resources:
+  PwebTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions: 
+        - Name: pweb-django-server
+          Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8000
+              HostPort: 8000
+          LogConfiguration:
+            LogDriver: awslogs
+            options: 
+              awslogs-create-group: true
+              awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-django
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: DJANGO_SETTINGS_MODULE
+              Value: config.settings.production
+            - Name: ALLOWED_HOSTS
+              Value: ['*']
+            - Name: REDIS_DB
+              Value: 0     
+            - Name: CELERY_BEAT_SCHEDULER
+              Value: django_celery_beat.schedulers.DatabaseScheduler
+          Secrets:
+            - Name: SECRET_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
+            - Name: DB_Name
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBName
+            - Name: DB_USER
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
+            - Name: DB_PASSWORD
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+            - Name: DB_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
+            - Name: AWS_ACCESS_KEY_ID
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/ACCESS_KEY_ID
+            - Name: AWS_SECRET_ACCESS_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_ACCESS_KEY
+            - Name: AWS_STORAGE_BUCKET_NAME
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/STORAGE_BUCKET_NAME
+            - Name: AWS_S3_CUSTOM_DOMAIN
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
+            - Name: REDIS_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST          
+        - Name: pweb-celery-worker
+          Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
+          Essential: true
+          Command:
+            - celery -A config worker -l INFO
+          LogConfiguration:
+            LogDriver: awslogs
+            options: 
+              awslogs-create-group: true
+              awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-celery-worker
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: DJANGO_SETTINGS_MODULE
+              Value: config.settings.production
+            - Name: ALLOWED_HOSTS
+              Value: ['*']
+            - Name: REDIS_DB
+              Value: 0     
+            - Name: CELERY_BEAT_SCHEDULER
+              Value: django_celery_beat.schedulers.DatabaseScheduler
+          Secrets:
+            - Name: SECRET_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
+            - Name: DB_Name
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBName
+            - Name: DB_USER
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
+            - Name: DB_PASSWORD
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+            - Name: DB_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
+            - Name: AWS_ACCESS_KEY_ID
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/ACCESS_KEY_ID
+            - Name: AWS_SECRET_ACCESS_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_ACCESS_KEY
+            - Name: AWS_STORAGE_BUCKET_NAME
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/STORAGE_BUCKET_NAME
+            - Name: AWS_S3_CUSTOM_DOMAIN
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
+            - Name: REDIS_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST       
+        - Name: pweb-celery-beat
+          Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
+          Essential: true
+          Command:
+            - celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+          LogConfiguration:
+            LogDriver: awslogs
+            options: 
+              awslogs-create-group: true
+              awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-celery-beat
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: DJANGO_SETTINGS_MODULE
+              Value: config.settings.production
+            - Name: ALLOWED_HOSTS
+              Value: ['*']
+            - Name: REDIS_DB
+              Value: 0     
+            - Name: CELERY_BEAT_SCHEDULER
+              Value: django_celery_beat.schedulers.DatabaseScheduler
+          Secrets:
+            - Name: SECRET_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
+            - Name: DB_Name
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBName
+            - Name: DB_USER
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
+            - Name: DB_PASSWORD
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+            - Name: DB_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
+            - Name: AWS_ACCESS_KEY_ID
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/ACCESS_KEY_ID
+            - Name: AWS_SECRET_ACCESS_KEY
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_ACCESS_KEY
+            - Name: AWS_STORAGE_BUCKET_NAME
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/STORAGE_BUCKET_NAME
+            - Name: AWS_S3_CUSTOM_DOMAIN
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
+            - Name: REDIS_HOST
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST     
+      Cpu: 512
+      ExecutionRoleArn: String
+      Family: tastyporns
+      Memory: 512
+      NetworkMode: String
+      Tags: 
+        - Tag
+      TaskRoleArn: String
+      Volumes: 
+        - Volume
+    
