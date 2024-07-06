@@ -1,4 +1,3 @@
----
 # Copyright 2023 franck fesse
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,16 +18,16 @@ Resources:
   PwebTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      ContainerDefinitions: 
+      ContainerDefinitions:
         - Name: pweb-django-server
           Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
           Essential: true
           PortMappings:
-            - ContainerPort: 8000
-              HostPort: 8000
+            - ContainerPort: 80
+              HostPort: 80
           LogConfiguration:
             LogDriver: awslogs
-            options: 
+            Options:
               awslogs-create-group: true
               awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-django
               awslogs-region: !Ref AWS::Region
@@ -38,19 +37,21 @@ Resources:
               Value: config.settings.production
             - Name: ALLOWED_HOSTS
               Value: ['*']
-            - Name: REDIS_DB
-              Value: 0     
+            - Name: REDIS_DBS
+              Value: 0
             - Name: CELERY_BEAT_SCHEDULER
               Value: django_celery_beat.schedulers.DatabaseScheduler
+            - Name: CELERY_SETTINGS
+              Value: config.settings.production
           Secrets:
             - Name: SECRET_KEY
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
-            - Name: DB_Name
+            - Name: DB_NAME
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBName
             - Name: DB_USER
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
             - Name: DB_PASSWORD
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword
             - Name: DB_HOST
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
             - Name: AWS_ACCESS_KEY_ID
@@ -62,7 +63,7 @@ Resources:
             - Name: AWS_S3_CUSTOM_DOMAIN
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
             - Name: REDIS_HOST
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST          
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST
         - Name: pweb-celery-worker
           Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
           Essential: true
@@ -70,7 +71,7 @@ Resources:
             - celery -A config worker -l INFO
           LogConfiguration:
             LogDriver: awslogs
-            options: 
+            Options:
               awslogs-create-group: true
               awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-celery-worker
               awslogs-region: !Ref AWS::Region
@@ -79,11 +80,13 @@ Resources:
             - Name: DJANGO_SETTINGS_MODULE
               Value: config.settings.production
             - Name: ALLOWED_HOSTS
-              Value: ['*']
+              Value: '*'
             - Name: REDIS_DB
-              Value: 0     
+              Value: 0
             - Name: CELERY_BEAT_SCHEDULER
               Value: django_celery_beat.schedulers.DatabaseScheduler
+            - Name: CELERY_SETTINGS
+              Value: config.settings.production
           Secrets:
             - Name: SECRET_KEY
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
@@ -92,7 +95,7 @@ Resources:
             - Name: DB_USER
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
             - Name: DB_PASSWORD
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword
             - Name: DB_HOST
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
             - Name: AWS_ACCESS_KEY_ID
@@ -104,15 +107,16 @@ Resources:
             - Name: AWS_S3_CUSTOM_DOMAIN
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
             - Name: REDIS_HOST
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST       
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST
         - Name: pweb-celery-beat
           Image: 570146545412.dkr.ecr.eu-west-2.amazonaws.com/tastyporns:latest
           Essential: true
           Command:
-            - celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+            - celery -A config beat -l info --scheduler
+              django_celery_beat.schedulers:DatabaseScheduler
           LogConfiguration:
             LogDriver: awslogs
-            options: 
+            Options:
               awslogs-create-group: true
               awslogs-group: !Sub /${AWS::StackName}/ecs/tastyporns-celery-beat
               awslogs-region: !Ref AWS::Region
@@ -121,11 +125,13 @@ Resources:
             - Name: DJANGO_SETTINGS_MODULE
               Value: config.settings.production
             - Name: ALLOWED_HOSTS
-              Value: ['*']
+              Value: '*'
             - Name: REDIS_DB
-              Value: 0     
+              Value: 0
             - Name: CELERY_BEAT_SCHEDULER
               Value: django_celery_beat.schedulers.DatabaseScheduler
+            - Name: CELERY_SETTINGS
+              Value: config.settings.production
           Secrets:
             - Name: SECRET_KEY
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/SECRET_KEY
@@ -134,7 +140,7 @@ Resources:
             - Name: DB_USER
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBUsername
             - Name: DB_PASSWORD
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword 
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DBPassword
             - Name: DB_HOST
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/DB_HOST
             - Name: AWS_ACCESS_KEY_ID
@@ -146,15 +152,14 @@ Resources:
             - Name: AWS_S3_CUSTOM_DOMAIN
               ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/S3_CUSTOM_DOMAIN
             - Name: REDIS_HOST
-              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST     
+              ValueFrom: arn:aws:ssm:eu-west-2:570146545412:parameter/REDIS_HOST
       Cpu: 512
-      ExecutionRoleArn: String
+      ExecutionRoleArn: arn:aws:iam::570146545412:role/ecsTaskExecutionRole
       Family: tastyporns
       Memory: 512
-      NetworkMode: String
-      Tags: 
-        - Tag
-      TaskRoleArn: String
-      Volumes: 
-        - Volume
-    
+      NetworkMode: bridge
+      Tags:
+        - Key: Environment
+          Value: Dev
+      TaskRoleArn: arn:aws:iam::570146545412:role/ecsTaskExecutionRole
+      
