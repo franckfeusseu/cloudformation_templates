@@ -15,6 +15,14 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Create an elastic cache instance.
 
+Parameters:
+  MyVpc:
+    Type: AWS::EC2::VPC::Id
+    Description: Choose which VPC the Elastic cache  should be deployed to
+  MySubnets:
+    Type: List<AWS::EC2::Subnet::Id> 
+    Description: Choose which Subnet the Elastic cache should be deployed to 
+
 Resources:
   MyElasticacheInstance:
     Type: AWS::ElastiCache::CacheCluster
@@ -22,6 +30,7 @@ Resources:
       Engine: redis
       CacheNodeType: cache.t3.micro
       NumCacheNodes: '1'
+      CacheSubnetGroupName: !Ref SubnetGroup
       VpcSecurityGroupIds:
         - !GetAtt 
           - ElasticacheSecurityGroup
@@ -35,7 +44,16 @@ Resources:
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 0.0.0.0/0    
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref MyVpc  
+   
+  SubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: My Cache Subnet Group
+      SubnetIds: !Ref MySubnets
+
+
 
 Outputs:
   DatabaseEndpoint:

@@ -13,8 +13,7 @@
 # limitations under the License.
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: EC2 Instance with user data
-
+Description: Wordpress Architecture with EC2 , Mysql RDS 
 Parameters:
   SSHKey:
     Type: AWS::EC2::KeyPair::KeyName
